@@ -1,0 +1,52 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Price {
+  competitor_name: String!
+  currency: Float!
+  taxes: Float!
+  amount: Float!
+  date: String!
+}
+
+type RoomInsight {
+  room_id: String!
+  room_name: String!
+  room_type: String!
+  prices: [Price!]!
+  last_updated_at: String!
+}
+
+type HotelInsight {
+  room: RoomInsight!
+}
+
+type MetricPrice {
+  competitor_name: String!
+  gross_amount: Float!
+  net_amount: Float!
+}
+
+type Metric {
+  best_price: MetricPrice!
+  average_price: MetricPrice!
+  worst_price: MetricPrice!
+}
+
+type RoomMetric {
+  room_id: String!
+  room_name: String!
+  date: String!
+  metrics: [Metric!]!
+  last_updated_at: String!
+}
+
+type HotelMetric {
+  room: RoomMetric!
+}
+
+type Query {
+  getHotelInsights: HotelInsight
+  getHotelMetrics: HotelMetric
+}
