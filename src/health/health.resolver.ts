@@ -1,3 +1,4 @@
+import { SetMetadata, UseGuards } from '@nestjs/common';
 import { Resolver, Query } from '@nestjs/graphql';
 import {
   HealthCheck,
@@ -5,6 +6,7 @@ import {
   HttpHealthIndicator,
   MongooseHealthIndicator,
 } from '@nestjs/terminus';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Ping } from './models/ping.model';
 
 @Resolver(of => Ping)
@@ -15,6 +17,8 @@ export class HealthResolver {
     private mongoose: MongooseHealthIndicator,
   ) {}
 
+  @UseGuards(JwtAuthGuard)
+  @SetMetadata('roles', ['public'])
   @Query(returns => Ping)
   @HealthCheck()
   async ping() {
