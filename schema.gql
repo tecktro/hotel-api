@@ -46,7 +46,14 @@ type HotelMetric {
   room: RoomMetric!
 }
 
+type Ping {
+  db: String!
+  local_api: String!
+  external_api: String!
+}
+
 type Query {
   getHotelInsights: HotelInsight
   getHotelMetrics: HotelMetric
+  ping: Ping!
 }

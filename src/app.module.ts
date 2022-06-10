@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { InsightsModule } from './insights/insights.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { MetricsModule } from './metrics/metrics.module';
       playground: true,
       installSubscriptionHandlers: true,
     }),
+    HealthModule,
   ],
   controllers: [AppController],
 })
