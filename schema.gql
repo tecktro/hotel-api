@@ -43,7 +43,7 @@ type RoomMetric {
 }
 
 type HotelMetric {
-  room: RoomMetric!
+  room: [RoomMetric!]!
 }
 
 type Ping {
@@ -53,7 +53,41 @@ type Ping {
 }
 
 type Query {
-  getHotelInsights: HotelInsight
-  getHotelMetrics: HotelMetric
+  getHotelInsights(getInsightInput: GetInsightsInput!): HotelInsight
+  getHotelMetrics(getMetricInput: GetMetricInput!): HotelMetric
   ping: Ping!
+}
+
+input GetInsightsInput {
+  hotel_id: String!
+  period: PERIOD!
+  room_type: ROOM_TYPE!
+  limit: Int!
+}
+
+"""Periods available"""
+enum PERIOD {
+  """30 days period"""
+  DAYS_30
+
+  """60 days period"""
+  DAYS_60
+
+  """90 days period"""
+  DAYS_90
+}
+
+"""Rooms Type Available"""
+enum ROOM_TYPE {
+  """Business room type"""
+  BUSINESS
+
+  """Residential room type"""
+  RESIDENTIAL
+}
+
+input GetMetricInput {
+  hotel_id: String!
+  day: String!
+  room_type: ROOM_TYPE!
 }
