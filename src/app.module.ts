@@ -35,7 +35,7 @@ import * as redisStore from 'cache-manager-redis-store';
       installSubscriptionHandlers: true,
     }),
     CacheModule.register({
-      ttl: 60, //seconds to expire cache
+      ttl: 2, //seconds to expire cache
       store: redisStore,
       host: 'localhost',
       port: 6379,

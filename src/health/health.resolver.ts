@@ -25,10 +25,13 @@ export class HealthResolver {
     const database = await this.health.check([
       async () => this.mongoose.pingCheck('mongoose'),
     ]);
+    const external_api = await this.health.check([
+      async () => this.http.pingCheck('external-api', 'http://localhost:5000'),
+    ]);
     return {
       db: database.status,
       local_api: 'ok',
-      external_api: 'ok',
+      external_api: external_api.status,
     };
   }
 }

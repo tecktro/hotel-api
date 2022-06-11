@@ -1,80 +1,65 @@
+import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Hotels, HotelsDocument } from 'src/common/schemas/hotels.schema';
-import { Prices, PricesDocument } from 'src/common/schemas/prices.schema';
+import { ConfigService } from '@nestjs/config';
+import { lastValueFrom } from 'rxjs';
+import { ROOM_TYPE } from 'src/common/roomType.enum';
 import { GetMetricInput } from './dto/getMetric.input';
 
 @Injectable()
 export class MetricsService {
   constructor(
-    @InjectModel(Prices.name) private priceModel: Model<PricesDocument>,
-    @InjectModel(Hotels.name) private hotelModel: Model<HotelsDocument>,
+    private httpService: HttpService,
+    private config: ConfigService,
   ) {}
 
   async getMetrics(metricInput: GetMetricInput) {
-    const hotelResult = await this.hotelModel
-      .aggregate([
-        { $match: { hotel_id: metricInput.hotel_id } },
-        {
-          $project: {
-            hotel_id: 1,
-            name: 1,
-            city: 1,
-            state: 1,
-            rooms: {
-              $filter: {
-                input: '$rooms',
-                as: 'rooms',
-                cond: { $eq: ['$$rooms.room_type', metricInput.room_type] },
-              },
-            },
-          },
-        },
-      ])
-      .exec();
+    const dataAPI = await this.fetchApiData(metricInput);
+
+    const hotelData = this.addSelectedTypeRoomsAndPrices(
+      dataAPI,
+      metricInput.room_type,
+    );
 
     const rooms = await Promise.all(
-      hotelResult[0].rooms.map(async room =>
-        this.resolveMetrics(metricInput.day, room),
-      ),
+      hotelData.map(async room => this.resolveMetrics(metricInput.day, room)),
     );
 
     return { room: rooms };
   }
 
-  async resolveMetrics(day, room) {
-    const requiredDate = new Date(day);
-
-    const roomPrices = await this.priceModel
-      .aggregate([
-        { $match: { room_id: room.room_id } },
+  async fetchApiData(metricInput: GetMetricInput) {
+    const hotelData = await lastValueFrom(
+      this.httpService.get(
+        `${this.config.get('EXTERNAL_API')}/${metricInput.hotel_id}`,
+      ),
+    );
+    const pricesData = await lastValueFrom(
+      this.httpService.get(
+        `${this.config.get('EXTERNAL_API')}/${metricInput.hotel_id}/prices`,
         {
-          $project: {
-            room_id: 1,
-            prices: {
-              $filter: {
-                input: '$prices',
-                as: 'prices',
-                cond: {
-                  $and: [
-                    { $gt: ['$$prices.date', requiredDate] },
-                    {
-                      $lt: [
-                        '$$prices.date',
-                        new Date(requiredDate.getTime() + 86400000),
-                      ],
-                    },
-                  ],
-                },
-              },
-            },
+          params: {
+            start_date: metricInput.day,
+            end_date: metricInput.day,
           },
         },
-      ])
-      .exec();
+      ),
+    );
 
-    if (!roomPrices.length) {
+    return { hotel: hotelData.data, prices: pricesData.data.prices };
+  }
+
+  addSelectedTypeRoomsAndPrices(hotelData, room_type: ROOM_TYPE) {
+    return hotelData.hotel.rooms.reduce((acc, cur) => {
+      if (cur.room_type === room_type) {
+        cur.prices = hotelData.prices[cur.room_id][0][0];
+        acc.push(cur);
+      }
+      return acc;
+    }, []);
+  }
+
+  async resolveMetrics(day, room) {
+    if (!room) {
       return {};
     }
 
@@ -83,9 +68,9 @@ export class MetricsService {
       room_name: room.room_name,
       date: day,
       metrics: {
-        best_price: this.getBest(roomPrices[0].prices[0]),
-        average_price: this.getAverage(roomPrices[0].prices[0]),
-        worst_price: this.getWorst(roomPrices[0].prices[0]),
+        best_price: this.getBest(room.prices),
+        average_price: this.getAverage(room.prices),
+        worst_price: this.getWorst(room.prices),
       },
     };
   }
@@ -125,7 +110,7 @@ export class MetricsService {
         competitor_name: e,
         gross_amount: prices[e].price,
         // eslint-disable-next-line prettier/prettier
-        net_amount: prices[e].price - prices[e].price * (prices[e].tax / 100),
+        net_amount: prices[e].price - (prices[e].price * (prices[e].tax / 100)),
       };
     }, []);
   }

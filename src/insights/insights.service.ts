@@ -1,14 +1,12 @@
+import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Hotels, HotelsDocument } from 'src/common/schemas/hotels.schema';
-import { Prices, PricesDocument } from 'src/common/schemas/prices.schema';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class InsightsService {
   constructor(
-    @InjectModel(Prices.name) private priceModel: Model<PricesDocument>,
-    @InjectModel(Hotels.name) private hotelModel: Model<HotelsDocument>,
+    private httpService: HttpService,
+    private config: ConfigService,
   ) {}
 
   getInsights(input) {
