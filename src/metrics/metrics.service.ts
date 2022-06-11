@@ -40,9 +40,7 @@ export class MetricsService {
       ),
     );
 
-    const result = { room: rooms };
-
-    return result;
+    return { room: rooms };
   }
 
   async resolveMetrics(day, room) {

@@ -1,5 +1,5 @@
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { Module } from '@nestjs/common';
+import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -8,12 +8,14 @@ import { AuthModule } from './auth/auth.module';
 import { InsightsModule } from './insights/insights.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { HealthModule } from './health/health.module';
+import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [
     AuthModule,
     InsightsModule,
     MetricsModule,
+    HealthModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -32,7 +34,13 @@ import { HealthModule } from './health/health.module';
       playground: true,
       installSubscriptionHandlers: true,
     }),
-    HealthModule,
+    CacheModule.register({
+      ttl: 60, //seconds to expire cache
+      store: redisStore,
+      host: 'localhost',
+      port: 6379,
+      isGlobal: true,
+    }),
   ],
   controllers: [AppController],
 })
