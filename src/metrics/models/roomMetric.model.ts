@@ -3,18 +3,15 @@ import { Metric } from './metric.model';
 
 @ObjectType()
 export class RoomMetric {
-  @Field()
+  @Field({ nullable: true })
   room_id: string;
 
-  @Field()
+  @Field({ nullable: true })
   room_name: string;
 
-  @Field()
+  @Field({ nullable: true })
   date: string;
 
-  @Field(type => [Metric])
-  metrics: Metric[];
-
-  @Field()
-  last_updated_at: string;
+  @Field(type => Metric, { nullable: true })
+  metrics: Metric;
 }

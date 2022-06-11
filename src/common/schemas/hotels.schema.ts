@@ -6,7 +6,7 @@ export type HotelsDocument = Hotels & Document;
 @Schema()
 export class Hotels {
   @Prop()
-  hotel_id: string;
+  hotel_id: number;
 
   @Prop()
   name: string;

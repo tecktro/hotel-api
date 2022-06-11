@@ -23,27 +23,26 @@ type HotelInsight {
 }
 
 type MetricPrice {
-  competitor_name: String!
-  gross_amount: Float!
-  net_amount: Float!
+  competitor_name: String
+  gross_amount: Float
+  net_amount: Float
 }
 
 type Metric {
-  best_price: MetricPrice!
-  average_price: MetricPrice!
-  worst_price: MetricPrice!
+  best_price: MetricPrice
+  average_price: MetricPrice
+  worst_price: MetricPrice
 }
 
 type RoomMetric {
-  room_id: String!
-  room_name: String!
-  date: String!
-  metrics: [Metric!]!
-  last_updated_at: String!
+  room_id: String
+  room_name: String
+  date: String
+  metrics: Metric
 }
 
 type HotelMetric {
-  room: [RoomMetric!]!
+  room: [RoomMetric!]
 }
 
 type Ping {
@@ -87,7 +86,7 @@ enum ROOM_TYPE {
 }
 
 input GetMetricInput {
-  hotel_id: String!
+  hotel_id: Int!
   day: String!
   room_type: ROOM_TYPE!
 }

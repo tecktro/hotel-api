@@ -1,10 +1,10 @@
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, InputType, Int } from '@nestjs/graphql';
 import { ROOM_TYPE } from 'src/common/roomType.enum';
 
 @InputType()
 export class GetMetricInput {
-  @Field()
-  hotel_id: string;
+  @Field(type => Int)
+  hotel_id: number;
 
   @Field()
   day: string;
