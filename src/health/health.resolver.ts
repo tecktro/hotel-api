@@ -1,4 +1,5 @@
 import { SetMetadata, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Resolver, Query } from '@nestjs/graphql';
 import {
   HealthCheck,
@@ -6,32 +7,45 @@ import {
   HttpHealthIndicator,
   MongooseHealthIndicator,
 } from '@nestjs/terminus';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Ping } from './models/ping.model';
 
-@Resolver(of => Ping)
+interface IHealthCheckResult {
+  db: string;
+  local_api: string;
+  external_api: string;
+}
+
+@Resolver(() => Ping)
 export class HealthResolver {
   constructor(
-    private health: HealthCheckService,
-    private http: HttpHealthIndicator,
-    private mongoose: MongooseHealthIndicator,
+    private healthCheckService: HealthCheckService,
+    private httpHealthIndicator: HttpHealthIndicator,
+    private mongooseHealthIndicator: MongooseHealthIndicator,
+    private configService: ConfigService,
   ) {}
 
   @UseGuards(JwtAuthGuard)
   @SetMetadata('roles', ['public'])
-  @Query(returns => Ping)
+  @Query(() => Ping)
   @HealthCheck()
-  async ping() {
-    const database = await this.health.check([
-      async () => this.mongoose.pingCheck('mongoose'),
+  async ping(): Promise<IHealthCheckResult> {
+    const database = await this.healthCheckService.check([
+      async () => this.mongooseHealthIndicator.pingCheck('mongoose'),
     ]);
-    const external_api = await this.health.check([
-      async () => this.http.pingCheck('external-api', 'http://localhost:5000'),
+    const externalApi = await this.healthCheckService.check([
+      async () =>
+        this.httpHealthIndicator.pingCheck(
+          'external-api',
+          this.configService.get<string>('EXTERNAL_API') ??
+            'http://localhost:5000',
+        ),
     ]);
+
     return {
       db: database.status,
       local_api: 'ok',
-      external_api: external_api.status,
+      external_api: externalApi.status,
     };
   }
 }

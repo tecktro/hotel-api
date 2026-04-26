@@ -6,24 +6,53 @@ import {
 } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtService } from '@nestjs/jwt';
-import { jwtConstants } from './constants';
+import { Reflector } from '@nestjs/core';
+import { getJwtSecret } from './constants';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private reflector: Reflector,
+  ) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const ctx = GqlExecutionContext.create(context).getContext().req;
-    const token = ctx.headers.authorization.replace('Bearer ', '');
+    const roles =
+      this.reflector.getAllAndOverride<string[]>('roles', [
+        context.getHandler(),
+        context.getClass(),
+      ]) ?? [];
+
+    if (roles.includes('public')) {
+      return true;
+    }
+
+    const request = GqlExecutionContext.create(context).getContext()?.req;
+    const authorization = request?.headers?.authorization;
+
+    if (
+      typeof authorization !== 'string' ||
+      !authorization.startsWith('Bearer ')
+    ) {
+      throw new UnauthorizedException();
+    }
+
+    const token = authorization.slice('Bearer '.length).trim();
+    if (!token) {
+      throw new UnauthorizedException();
+    }
+
     const payload = await this.jwtService
-      .verifyAsync(token, { secret: jwtConstants.secret })
+      .verifyAsync(token, { secret: getJwtSecret() })
       .catch(() => {
         throw new UnauthorizedException();
       });
 
-    const roles = Reflect.getMetadata('roles', context.getHandler());
-    if (payload.role !== roles[0]) {
+    if (roles.length > 0 && !roles.includes(payload.role)) {
       throw new UnauthorizedException();
     }
+
+    request.user = payload;
     return true;
   }
 }
