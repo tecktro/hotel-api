@@ -1,14 +1,16 @@
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { CacheModule, Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
+import { createKeyv } from '@keyv/redis';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { InsightsModule } from './insights/insights.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { HealthModule } from './health/health.module';
-import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -22,24 +24,30 @@ import * as redisStore from 'cache-manager-redis-store';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (config: ConfigService) => ({
-        uri: config.get('DB_URL'),
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
+        uri: config.getOrThrow<string>('DB_URL'),
       }),
       inject: [ConfigService],
     }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: 'schema.gql',
-      playground: true,
-      installSubscriptionHandlers: true,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        autoSchemaFile: join(process.cwd(), 'schema.gql'),
+        introspection: config.get('NODE_ENV') !== 'production',
+        playground: config.get('NODE_ENV') !== 'production',
+      }),
     }),
-    CacheModule.register({
-      ttl: 60, //seconds to expire cache
-      store: redisStore,
-      host: 'localhost',
-      port: 6379,
+    CacheModule.registerAsync({
+      inject: [ConfigService],
       isGlobal: true,
+      useFactory: (config: ConfigService) => ({
+        ttl: 60_000,
+        stores: [
+          createKeyv(
+            config.get<string>('REDIS_URL') ?? 'redis://localhost:6379',
+          ),
+        ],
+      }),
     }),
   ],
   controllers: [AppController],
