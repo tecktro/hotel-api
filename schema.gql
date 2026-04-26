@@ -1,0 +1,92 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Price {
+  competitor_name: String!
+  currency: Float!
+  taxes: Float!
+  amount: Float!
+  date: String!
+}
+
+type RoomInsight {
+  room_id: String!
+  room_name: String!
+  room_type: String!
+  prices: [Price!]!
+  last_updated_at: String!
+}
+
+type HotelInsight {
+  room: RoomInsight!
+}
+
+type MetricPrice {
+  competitor_name: String
+  gross_amount: Float
+  net_amount: Float
+}
+
+type Metric {
+  best_price: MetricPrice
+  average_price: MetricPrice
+  worst_price: MetricPrice
+}
+
+type RoomMetric {
+  room_id: String
+  room_name: String
+  date: String
+  metrics: Metric
+}
+
+type HotelMetric {
+  room: [RoomMetric!]
+}
+
+type Ping {
+  db: String!
+  local_api: String!
+  external_api: String!
+}
+
+type Query {
+  getHotelInsights(getInsightInput: GetInsightsInput!): HotelInsight
+  getHotelMetrics(getMetricInput: GetMetricInput!): HotelMetric
+  ping: Ping!
+}
+
+input GetInsightsInput {
+  hotel_id: String!
+  period: PERIOD!
+  room_type: ROOM_TYPE!
+  limit: Int!
+}
+
+"""Periods available"""
+enum PERIOD {
+  """30 days period"""
+  DAYS_30
+
+  """60 days period"""
+  DAYS_60
+
+  """90 days period"""
+  DAYS_90
+}
+
+"""Rooms Type Available"""
+enum ROOM_TYPE {
+  """Business room type"""
+  BUSINESS
+
+  """Residential room type"""
+  RESIDENTIAL
+}
+
+input GetMetricInput {
+  hotel_id: Int!
+  day: String!
+  room_type: ROOM_TYPE!
+}
